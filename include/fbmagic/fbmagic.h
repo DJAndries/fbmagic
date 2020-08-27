@@ -22,4 +22,10 @@ fbmagic_image* fbmagic_load_bmp(const char* filename);
 
 void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image);
 
+fbmagic_font* fbmagic_load_bdf(const char* filename);
+
+void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y, char* const text, uint32_t color_val, unsigned short scale);
+
+fbmagic_font* fbmagic_load_bdf(const char* filename);
+
 #endif

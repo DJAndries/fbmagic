@@ -1,0 +1,1 @@
+- add safety for fonts bigger than 32x32

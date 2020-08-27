@@ -3,6 +3,7 @@
 
 #include <linux/fb.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct fbmagic_ctx {
 	struct fb_var_screeninfo vinfo;
@@ -22,5 +23,19 @@ struct fbmagic_image {
 	size_t bmp_start_addr;
 };
 typedef struct fbmagic_image fbmagic_image;
+
+struct fbmagic_font_char {
+	unsigned short width;
+	unsigned short height;
+	short x;
+	short y;
+	uint32_t data[32];
+};
+typedef struct fbmagic_font_char fbmagic_font_char;
+
+struct fbmagic_font {
+	fbmagic_font_char chars[256];
+};
+typedef struct fbmagic_font fbmagic_font;
 
 #endif
