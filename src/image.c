@@ -106,15 +106,17 @@ fbmagic_image* fbmagic_load_bmp(const char* filename) {
 	return image;
 }
 
-void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image) {
-	size_t data_i, ix, iy;
+void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image, float scale) {
+	size_t data_i, ix, iy, sx, sy;
 	uint32_t color_val;
 	int bytes_per_pixel = image->bpp / 8;
 
-	for (iy = 0; iy < image->height; iy++) {
-		for (ix = 0; ix < image->width; ix++) {
-			data_i = ((image->width * (image->height - iy - 1))
-					+ ix) * bytes_per_pixel;
+	for (iy = 0; iy < (size_t)(image->height * scale); iy++) {
+		for (ix = 0; ix < (size_t)(image->width * scale); ix++) {
+			sy = (size_t)(iy / scale);
+			sx = (size_t)(ix / scale);
+			data_i = ((image->width * (image->height - sy - 1))
+					+ sx) * bytes_per_pixel;
 			if (bytes_per_pixel == 4) {
 				if (image->data[data_i + 3] < 128) {
 					continue;
@@ -125,4 +127,9 @@ void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* ima
 			fbmagic_write_pixel(ctx, x + ix, y + iy, color_val);
 		}
 	}
+}
+
+void fbmagic_free_image(fbmagic_image* image) {
+	free(image->data);
+	free(image);
 }

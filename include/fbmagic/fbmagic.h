@@ -20,12 +20,20 @@ void fbmagic_fill(fbmagic_ctx* ctx, size_t x, size_t y, size_t width, size_t hei
 
 fbmagic_image* fbmagic_load_bmp(const char* filename);
 
-void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image);
+void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y,
+		fbmagic_image* image, float scale);
+
+void fbmagic_free_image(fbmagic_image* image);
 
 fbmagic_font* fbmagic_load_bdf(const char* filename);
 
-void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y, char* const text, uint32_t color_val, unsigned short scale);
+void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y,
+		char* const text, uint32_t color_val, float scale);
 
 fbmagic_font* fbmagic_load_bdf(const char* filename);
+
+void fbmagic_stroke(fbmagic_ctx* ctx, size_t x, size_t y,
+		size_t width, size_t height, size_t stroke_width,
+		uint32_t color_val);
 
 #endif

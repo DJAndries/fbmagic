@@ -13,17 +13,19 @@ int main() {
 		return 1;
 	}
 
-	font = fbmagic_load_bdf("./test/bitocra.bdf");
+	font = fbmagic_load_bdf("./test/CreteRound.bdf");
 	if (font == 0) {
 		return 1;
 	}
 
 
-	fbmagic_fill(ctx, 20, 20, 300, 220, fbmagic_color_value(ctx, 0, 0, 100));
+	fbmagic_fill(ctx, 20, 20, 280, 200, fbmagic_color_value(ctx, 0, 0, 100));
 
-	fbmagic_draw_text(ctx, font, 10, 70, "quick brown fox", fbmagic_color_value(ctx, 255, 255, 255), 3);
+	fbmagic_stroke(ctx, 20, 20, 280, 200, 4, fbmagic_color_value(ctx, 255, 0, 0));
 
-	fbmagic_draw_image(ctx, 100, 100, image);
+	fbmagic_draw_text(ctx, font, 30, 70, "quick brown fox!", fbmagic_color_value(ctx, 255, 255, 255), 0.75f);
+
+	fbmagic_draw_image(ctx, 100, 100, image, 0.5f);
 
 	fbmagic_flush(ctx);
 

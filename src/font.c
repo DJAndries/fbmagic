@@ -5,6 +5,8 @@
 #include "log.h"
 
 #define LINE_MAX_CHARS 256
+#define SPACE_DIV 9
+#define SPACE_CHAR_DIV 2
 
 static fbmagic_font* free_close_fail(FILE* file, fbmagic_font* font) {
 	fclose(file);
@@ -25,6 +27,7 @@ fbmagic_font* fbmagic_load_bdf(const char* filename) {
 	short def_y = 0;
 
 	unsigned char encoding = 0;
+	unsigned int tencoding = 0;
 	unsigned short curr_width = 0;
 	unsigned short curr_height = 0;
 	short curr_x = 0;
@@ -46,9 +49,11 @@ fbmagic_font* fbmagic_load_bdf(const char* filename) {
 
 	while (fgets(linebuf, LINE_MAX_CHARS, file) != 0) {
 		if (curr_bitmap_row >= 0) {
-			if (sscanf(linebuf, "%x", &font->chars[encoding].data[curr_bitmap_row]) != 1) {
-				mlog(LOG_ERROR, "Could not parse bitmap row");
-				return free_close_fail(file, font);
+			if (encoding > 0) {
+				if (sscanf(linebuf, "%x", &font->chars[encoding].data[curr_bitmap_row]) != 1) {
+					mlog(LOG_ERROR, "Could not parse bitmap row");
+					return free_close_fail(file, font);
+				}
 			}
 			
 			if (++curr_bitmap_row == curr_height) {
@@ -66,10 +71,11 @@ fbmagic_font* fbmagic_load_bdf(const char* filename) {
 				return free_close_fail(file, font);
 			}
 		} else if (strcmp("ENCODING", cmd) == 0) {
-			if (sscanf(linebuf, "%s %hhu", cmd, &encoding) != 2) {
+			if (sscanf(linebuf, "%s %u", cmd, &tencoding) != 2) {
 				mlog(LOG_ERROR, "bdf font: ENCODING is bad");
 				return free_close_fail(file, font);
 			}
+			encoding = (tencoding > 255) ? 0 : (tencoding & 0xFF);
 		} else if (strcmp("STARTCHAR", cmd) == 0) {
 			curr_width = def_width;
 			curr_height = def_height;
@@ -81,14 +87,13 @@ fbmagic_font* fbmagic_load_bdf(const char* filename) {
 				return free_close_fail(file, font);
 			}
 		} else if (strcmp("BITMAP", cmd) == 0) {
-			if (encoding == 0) {
-				mlog(LOG_ERROR, "Started BITMAP before ENCODING");
-				return free_close_fail(file, font);
+			if (encoding > 0) {
+				font->chars[encoding].x = curr_x;
+				font->chars[encoding].y = curr_y;
+				font->chars[encoding].width = curr_width;
+				font->chars[encoding].height = curr_height;
 			}
-			font->chars[encoding].x = curr_x;
-			font->chars[encoding].y = curr_y;
-			font->chars[encoding].width = curr_width;
-			font->chars[encoding].height = curr_height;
+			
 			if (curr_height > 0) curr_bitmap_row = 0;
 		}
 	}
@@ -97,7 +102,8 @@ fbmagic_font* fbmagic_load_bdf(const char* filename) {
 	return font;
 }
 
-void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y, char* const text, uint32_t color_val, unsigned short scale) {
+void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y,
+		char* const text, uint32_t color_val, float scale) {
 	fbmagic_font_char* curr_char;
 	size_t i, ix, iy, sx, sy;
 	size_t starting_bit;
@@ -112,7 +118,7 @@ void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y,
 	}
 	for (i = 0; i < strlength; i++) {
 		if (text[i] == ' ') {
-			curr_x += 8;
+			curr_x += (int)(max_char_height / SPACE_CHAR_DIV * scale);
 			continue;
 		}
 		curr_char = &font->chars[(unsigned)text[i]];
@@ -130,12 +136,12 @@ void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y,
 				if (((curr_char->data[sy] >> (starting_bit - sx - 1)) & 0x01) == 0x00) {
 					continue;
 				}
-				fbmagic_write_pixel(ctx, curr_x + ix, 
-						y + iy - (curr_char->y * scale) +
-						((max_char_height - curr_char->height) * scale), color_val);
+				fbmagic_write_pixel(ctx, curr_x + ix + (short)(curr_char->x * scale), 
+						y + iy - (short)(curr_char->y * scale) +
+						(unsigned short)((max_char_height - curr_char->height) * scale), color_val);
 			}
 		}
 
-		curr_x += (curr_char->width * scale) + 3;
+		curr_x += (unsigned short)((curr_char->width + (max_char_height / SPACE_DIV)) * scale);
 	}
 }
