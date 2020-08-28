@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "log.h"
 
 #define LINE_MAX_CHARS 256
-#define SPACE_DIV 9
+#define SPACE_RATIO 0.1f
 #define SPACE_CHAR_DIV 2
 
 static fbmagic_font* free_close_fail(FILE* file, fbmagic_font* font) {
@@ -142,6 +143,6 @@ void fbmagic_draw_text(fbmagic_ctx* ctx, fbmagic_font* font, size_t x, size_t y,
 			}
 		}
 
-		curr_x += (unsigned short)((curr_char->width + (max_char_height / SPACE_DIV)) * scale);
+		curr_x += (unsigned short)((curr_char->width + curr_char->x + ceil(max_char_height * SPACE_RATIO)) * scale);
 	}
 }
