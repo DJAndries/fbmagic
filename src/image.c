@@ -1,6 +1,7 @@
 #include "fbmagic/fbmagic.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "log.h"
 
 static int seek_and_read(FILE* file, long int offset, size_t element_size, size_t n_element, void* dest) {
@@ -64,12 +65,6 @@ static fbmagic_image* parse_header(FILE* file) {
 		return 0;
 	}
 
-	if ((image->data = (char*)malloc(sizeof(char) * (bpp / 8) * width * height)) == 0) {
-		mlog(LOG_ERROR, "Failed to alloc image data");
-		free(image);
-		return 0;
-	}
-
 	image->width = width;
 	image->height = height;
 	image->bpp = bpp;
@@ -78,7 +73,57 @@ static fbmagic_image* parse_header(FILE* file) {
 	return image;
 }
 
-fbmagic_image* fbmagic_load_bmp(const char* filename) {
+static int convert_data(fbmagic_ctx* ctx, FILE* file, fbmagic_image* image) {
+	char* tdata;
+	size_t x, y, data_i;
+	uint32_t color_value;
+	unsigned int dbytes_per_pixel = ctx->vinfo.bits_per_pixel / 8;
+	unsigned int sbytes_per_pixel = image->bpp / 8;
+
+	if ((tdata = (char*)malloc(sizeof(char) * sbytes_per_pixel * image->width * image->height)) == 0) {
+		mlog(LOG_ERROR, "Failed to alloc image temp data");
+		return 1;
+	}
+	if ((image->data = (char*)malloc(sizeof(char) * dbytes_per_pixel * image->width * image->height)) == 0) {
+		mlog(LOG_ERROR, "Failed to alloc image data");
+		free(tdata);
+		return 1;
+	}
+	if ((image->alpha_map = (unsigned char*)malloc(sizeof(char) * image->width * image->height)) == 0) {
+		mlog(LOG_ERROR, "Failed to alloc alpha map");
+		free(image->data);
+		free(tdata);
+		return 1;
+	}
+	if (seek_and_read(file, image->bmp_start_addr, sizeof(char),
+				image->height * image->width * sbytes_per_pixel, tdata)) {
+		mlog(LOG_ERROR, "Failed to read img data");
+		free(tdata);
+		free(image->data);
+		free(image->alpha_map);
+		return 2;
+	}
+
+	for (y = 0; y < image->height; y++) {
+		for (x = 0; x < image->width; x++) {
+			data_i = ((image->height - y - 1) * image->width + x) * sbytes_per_pixel;
+
+			image->alpha_map[y * image->width + x] = sbytes_per_pixel == 4 ?
+				tdata[data_i + 3] : 255;
+
+			color_value = fbmagic_color_value(ctx, tdata[data_i + 2],
+					tdata[data_i + 1], tdata[data_i]);
+
+			memcpy(image->data + ((y * image->width + x) * dbytes_per_pixel),
+					&color_value, dbytes_per_pixel);
+		}
+	}
+
+	free(tdata);
+	return 0;
+}
+
+fbmagic_image* fbmagic_load_bmp(fbmagic_ctx* ctx, const char* filename) {
 	FILE* file;
 	fbmagic_image* image;
 
@@ -93,39 +138,57 @@ fbmagic_image* fbmagic_load_bmp(const char* filename) {
 		return 0;
 	}
 
-	if (seek_and_read(file, image->bmp_start_addr, sizeof(char),
-				image->height * image->width * (image->bpp / 8), image->data)) {
-		mlog(LOG_ERROR, "Failed to read img data");
-		free(image->data);
+	if (convert_data(ctx, file, image)) {
 		free(image);
 		fclose(file);
 		return 0;
 	}
+
 
 	fclose(file);
 	return image;
 }
 
 void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image, float scale) {
-	size_t data_i, ix, iy, sx, sy;
+	size_t ix, iy, sx, sy, si, sheight, swidth;
 	uint32_t color_val;
-	int bytes_per_pixel = image->bpp / 8;
+	unsigned int bytes_per_pixel = ctx->vinfo.bits_per_pixel / 8;
 
-	for (iy = 0; iy < (size_t)(image->height * scale); iy++) {
-		for (ix = 0; ix < (size_t)(image->width * scale); ix++) {
+	sheight = (size_t)(image->height * scale);
+	swidth = (size_t)(image->width * scale);
+
+	for (iy = 0; iy < sheight; iy++) {
+		for (ix = 0; ix < swidth; ix++) {
 			sy = (size_t)(iy / scale);
 			sx = (size_t)(ix / scale);
-			data_i = ((image->width * (image->height - sy - 1))
-					+ sx) * bytes_per_pixel;
-			if (bytes_per_pixel == 4) {
-				if (image->data[data_i + 3] < 128) {
-					continue;
-				}
+			si = sy * image->width + sx;
+
+			if (image->alpha_map[si] < 128) {
+				continue;
 			}
-			color_val = fbmagic_color_value(ctx, image->data[data_i + 2],
-					image->data[data_i + 1], image->data[data_i]);
+
+			memcpy(&color_val, image->data + (si * bytes_per_pixel),
+					bytes_per_pixel);
+
 			fbmagic_write_pixel(ctx, x + ix, y + iy, color_val);
 		}
+	}
+}
+
+void fbmagic_draw_image_quick(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image) {
+	size_t iy, si, di, img_width_bytes, screen_width_bytes;
+	unsigned int bytes_per_pixel = ctx->vinfo.bits_per_pixel / 8;
+
+	img_width_bytes = image->width * bytes_per_pixel;
+	screen_width_bytes = ctx->vinfo.xres * bytes_per_pixel;
+
+	di = (y * screen_width_bytes) + (x * bytes_per_pixel);
+	si = 0;
+	for (iy = 0; iy < image->height; iy++) {
+			memcpy(ctx->vbuf + di, image->data + si, img_width_bytes);
+			
+			di += screen_width_bytes;
+			si += img_width_bytes;
 	}
 }
 

@@ -16,6 +16,7 @@ typedef struct fbmagic_ctx fbmagic_ctx;
 
 struct fbmagic_image {
 	char* data;
+	unsigned char* alpha_map;
 	size_t width;
 	size_t height;
 	size_t bpp;

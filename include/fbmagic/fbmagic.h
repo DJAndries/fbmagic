@@ -18,7 +18,7 @@ void fbmagic_write_pixel(fbmagic_ctx* ctx, size_t x, size_t y, uint32_t color_va
 void fbmagic_fill(fbmagic_ctx* ctx, size_t x, size_t y, size_t width, size_t height,
 		uint32_t color_val);
 
-fbmagic_image* fbmagic_load_bmp(const char* filename);
+fbmagic_image* fbmagic_load_bmp(fbmagic_ctx* ctx, const char* filename);
 
 void fbmagic_draw_image(fbmagic_ctx* ctx, size_t x, size_t y,
 		fbmagic_image* image, float scale);
@@ -35,5 +35,7 @@ fbmagic_font* fbmagic_load_bdf(const char* filename);
 void fbmagic_stroke(fbmagic_ctx* ctx, size_t x, size_t y,
 		size_t width, size_t height, size_t stroke_width,
 		uint32_t color_val);
+
+void fbmagic_draw_image_quick(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image);
 
 #endif

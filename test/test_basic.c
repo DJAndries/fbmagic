@@ -8,7 +8,7 @@ int main() {
 		return 1;
 	}
 
-	image = fbmagic_load_bmp("./test/test.bmp");
+	image = fbmagic_load_bmp(ctx, "./test/test.bmp");
 	if (image == 0) {
 		return 1;
 	}
@@ -25,7 +25,7 @@ int main() {
 
 	fbmagic_draw_text(ctx, font, 30, 70, "quick brown fox!", fbmagic_color_value(ctx, 255, 255, 255), 0.75f);
 
-	fbmagic_draw_image(ctx, 100, 100, image, 0.5f);
+	fbmagic_draw_image(ctx, 100, 100, image, 1.2f);
 
 	fbmagic_flush(ctx);
 
