@@ -1,6 +1,7 @@
 #include "fbmagic/fbmagic.h"
 
 int main() {
+	int lock_fd;
 	fbmagic_image* image;
 	fbmagic_font* font;
 	fbmagic_ctx* ctx = fbmagic_init("/dev/fb1");
@@ -27,7 +28,11 @@ int main() {
 
 	fbmagic_draw_image(ctx, 100, 100, image, 1.2f);
 
+	if ((lock_fd = fbmagic_lock_acquire(0)) == 0) {
+		return 2;
+	}
 	fbmagic_flush(ctx);
+	fbmagic_lock_release(lock_fd);
 
 	fbmagic_exit(ctx);
 

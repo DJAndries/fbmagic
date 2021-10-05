@@ -38,4 +38,8 @@ void fbmagic_stroke(fbmagic_ctx* ctx, size_t x, size_t y,
 
 void fbmagic_draw_image_quick(fbmagic_ctx* ctx, size_t x, size_t y, fbmagic_image* image);
 
+int fbmagic_lock_acquire(char should_block);
+
+void fbmagic_lock_release(int fd);
+
 #endif
