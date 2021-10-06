@@ -11,6 +11,7 @@ Simple C library for drawing to a framebuffer device
   - Draw function which includes alpha blending
   - Another draw function which performs better, but has no alpha blending
 - Load/draw BDF font/text
+- Device locking; good for multiple processes that require access to the device
 
 ## Build
 
